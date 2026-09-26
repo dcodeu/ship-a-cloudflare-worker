@@ -1,0 +1,1 @@
+{"mcpServers":{"ship-worker":{"args":["${CLAUDE_PLUGIN_ROOT}/skills/ship-a-cloudflare-worker/scripts/cf_mcp_server.py","${user_config.cloudflare_api_token}","${user_config.cloudflare_account_id}"],"command":"python3"}}}
