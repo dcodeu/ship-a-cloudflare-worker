@@ -60,7 +60,7 @@ Content-Type: application/json
 ```
 
 Needs Zone:Cache Purge on the token. Get the zone id with
-`GET /client/v4/zones?name=example.com`. Check every hostname separately
+`GET /client/v4/zones?name=<your-zone>`. Check every hostname separately
 after purging; apex and www can disagree.
 
 ## Deleting a script

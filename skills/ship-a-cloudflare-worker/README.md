@@ -15,18 +15,29 @@ without wrangler. The skill is the runbook; `scripts/` does the work;
 
 ## Quick start
 
-```bash
-export CLOUDFLARE_API_TOKEN=...       # needs Workers Scripts:Edit
-export CLOUDFLARE_ACCOUNT_ID=...
+Install as a Claude Code plugin and enter your Cloudflare API token and
+account ID when prompted (the token is stored in your system keychain).
+Then:
 
+```bash
 python3 scripts/deploy.py --script-name my-worker --module worker.js
 python3 scripts/verify.py --script-name my-worker --module worker.js
 ```
 
+Outside the plugin, pass credentials explicitly:
+
+```bash
+python3 scripts/deploy.py --script-name my-worker --module worker.js \
+  --api-token TOKEN --account-id ID
+```
+
 ## Status
 
-v1.0.2 — verified end-to-end twice against the live Cloudflare API: the
-shipped scripts deployed a scratch worker, confirmed it byte-identical
-through the API round-trip, and deleted it; an independent closed-book
-agent test using only this directory did the same. The API round-trip was
-additionally confirmed against a live production worker.
+v1.0.3 — credentials now come from the plugin's user config (prompted at
+install, token in the system keychain) instead of machine environment
+variables. v1.0.2 was verified end-to-end twice against the live
+Cloudflare API: the shipped scripts deployed a scratch worker, confirmed
+it byte-identical through the API round-trip, and deleted it; an
+independent closed-book agent test using only this directory did the same.
+The API round-trip was additionally confirmed against a live production
+worker.

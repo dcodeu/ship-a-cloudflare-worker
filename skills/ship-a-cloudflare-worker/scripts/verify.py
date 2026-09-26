@@ -2,9 +2,16 @@
 """Verify a deployed Cloudflare Worker is live and byte-identical.
 
 Usage:
-    CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
-        python3 verify.py --script-name NAME --module worker.js \
-        [--url https://example.com --expect-file dist.html]
+    python3 verify.py --script-name NAME --module worker.js \
+        [--api-token TOKEN] [--account-id ID] \
+        [--url https://<your-worker-domain> --expect-file dist.html]
+
+Credentials come from the plugin's user config (prompted once at install;
+the token is stored in the system keychain) and reach this script as
+CLAUDE_PLUGIN_OPTION_CLOUDFLARE_API_TOKEN /
+CLAUDE_PLUGIN_OPTION_CLOUDFLARE_ACCOUNT_ID, or they can be passed
+explicitly with --api-token / --account-id. This script never reads
+ambient machine credential variables.
 
 Checks:
   1. Downloads the script source back from the API and compares sha256
@@ -27,6 +34,12 @@ import urllib.error
 
 def sha256(b):
     return hashlib.sha256(b).hexdigest()
+
+
+def credential(name, flag_value):
+    """Explicit flag first, then the plugin user-config channel. Never the
+    machine's ambient credential environment."""
+    return flag_value or os.environ.get("CLAUDE_PLUGIN_OPTION_" + name)
 
 
 def api_get(path, token, account_id):
@@ -69,17 +82,24 @@ def main():
     p = argparse.ArgumentParser(description="Verify a deployed Cloudflare Worker.")
     p.add_argument("--script-name", required=True)
     p.add_argument("--module", required=True, help="Local module file to compare against")
-    p.add_argument("--account-id", default=os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
+    p.add_argument("--api-token", default=None,
+                   help="Cloudflare API token (default: plugin user config)")
+    p.add_argument("--account-id", default=None,
+                   help="Cloudflare account ID (default: plugin user config)")
     p.add_argument("--url", default=None, help="Public URL to fetch and compare")
     p.add_argument("--expect-file", default=None, help="File whose bytes the URL must serve")
     args = p.parse_args()
 
-    token = os.environ.get("CLOUDFLARE_API_TOKEN")
+    token = credential("CLOUDFLARE_API_TOKEN", args.api_token)
     if not token:
-        print("error: CLOUDFLARE_API_TOKEN is not set", file=sys.stderr)
+        print("error: no API token. Install this as a Claude Code plugin and "
+              "enter your token when prompted (it is stored in your system "
+              "keychain), or pass --api-token explicitly.", file=sys.stderr)
         return 1
-    if not args.account_id:
-        print("error: --account-id or CLOUDFLARE_ACCOUNT_ID is required", file=sys.stderr)
+    account_id = credential("CLOUDFLARE_ACCOUNT_ID", args.account_id)
+    if not account_id:
+        print("error: no account ID. Configure the plugin's Cloudflare "
+              "account ID, or pass --account-id explicitly.", file=sys.stderr)
         return 1
     if args.url and not args.expect_file:
         print("error: --url requires --expect-file", file=sys.stderr)
@@ -90,7 +110,7 @@ def main():
     with open(args.module, "rb") as f:
         local_src = f.read()
     status, remote_body, ctype, boundary = api_get(
-        f"/workers/scripts/{args.script_name}", token, args.account_id)
+        f"/workers/scripts/{args.script_name}", token, account_id)
     if status != 200:
         print(f"FAIL api round-trip: HTTP {status}: {remote_body[:200]!r}")
         return 1

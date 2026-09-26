@@ -5,7 +5,7 @@ license: MIT
 compatibility: Python 3.8+, outbound HTTPS to api.cloudflare.com, a Cloudflare API token with Workers Scripts:Edit (plus Zone:Cache Purge if you purge cache).
 metadata:
   author: dcodeu
-  version: 1.0.2
+  version: 1.0.3
 ---
 
 # Ship a Cloudflare Worker
@@ -27,9 +27,15 @@ every step is a command and every claim is verified afterward.
 2. **Deploy** with `scripts/deploy.py`:
 
    ```bash
-   CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
-     python3 scripts/deploy.py --script-name NAME --module worker.js
+   python3 scripts/deploy.py --script-name NAME --module worker.js
    ```
+
+   Credentials come from the plugin's user config: at install time you are
+   prompted for a Cloudflare API token (stored in your system keychain) and
+   account ID, and the plugin exposes them to the scripts as
+   `CLAUDE_PLUGIN_OPTION_CLOUDFLARE_API_TOKEN` /
+   `CLAUDE_PLUGIN_OPTION_CLOUDFLARE_ACCOUNT_ID`. You can also pass them
+   explicitly with `--api-token` / `--account-id`.
 
    This PUTs a multipart body (metadata JSON plus the module) to
    `/accounts/{account_id}/workers/scripts/{name}`. A `200` with
@@ -41,7 +47,7 @@ every step is a command and every claim is verified afterward.
 
    ```bash
    python3 scripts/verify.py --script-name NAME --module worker.js \
-     [--url https://example.com --expect-file dist.html]
+     [--url https://<your-worker-domain> --expect-file dist.html]
    ```
 
    This downloads the script back from the API and compares sha256 against
@@ -67,10 +73,13 @@ Never report "deployed" on the strength of the upload response alone.
 ## Operating Rules
 
 1. The token needs Workers Scripts:Edit (and Zone:Cache Purge if you purge).
-   Never print the token. Never commit it. It is read from
-   `CLOUDFLARE_API_TOKEN`; in environments where the credential comes from
-   a secret store or request-attached helper instead of an env var, attach
-   it there and skip the env lookup.
+   It is supplied through the plugin's user config: prompted once at
+   install, stored in the system keychain, exposed to the scripts as
+   `CLAUDE_PLUGIN_OPTION_CLOUDFLARE_API_TOKEN` (or passed explicitly with
+   `--api-token`). Never print the token. Never commit it. Never read it
+   from ambient machine credential variables, and never ask the user to
+   paste it into chat. The token is sent only to api.cloudflare.com, its
+   own issuer, as a Bearer header.
 2. `compatibility_date` defaults to today (`YYYY-MM-DD`). Pin an older date
    only if the worker depends on old runtime behavior.
 3. Script names are per-account. Deploying to an existing name overwrites it.

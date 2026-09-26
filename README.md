@@ -35,10 +35,11 @@ across agent platforms, not just Claude.
 
 ## Quick start
 
-```bash
-export CLOUDFLARE_API_TOKEN=...   # needs Workers Scripts:Edit
-export CLOUDFLARE_ACCOUNT_ID=...
+Install the plugin and enter your Cloudflare API token (needs Workers
+Scripts:Edit) and account ID when prompted. The token is stored in your
+system keychain, never in plain text. Then:
 
+```bash
 python3 skills/ship-a-cloudflare-worker/scripts/deploy.py \
   --script-name my-worker --module worker.js
 python3 skills/ship-a-cloudflare-worker/scripts/verify.py \
